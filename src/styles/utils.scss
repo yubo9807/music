@@ -1,0 +1,62 @@
+@mixin mediaMin() {
+  @media (max-width: 554px) {
+    @content;
+  }
+}
+
+@mixin mediaSmall() {
+  @media (max-width: 768px) {
+    @content;
+  }
+}
+@mixin noMediaSmall {
+  @media (min-width: 768px) {
+    @content;
+  }
+}
+
+@mixin mediaMiddle() {
+  @media (max-width: 1024px) {
+    @content;
+  }
+}
+
+@mixin mediaLarge() {
+  @media (min-width: 1440px) {
+    @content;
+  }
+}
+
+@mixin mediaOversized() {
+  @media (min-width: 1920px) {
+    @content;
+  }
+}
+
+// 竖屏
+@mixin mediaPortrait() {
+  @media (orientation:portrait) {
+    @content;
+  }
+}
+
+// 横屏
+@mixin mediaLandscape() {
+  @media (orientation:landscape) {
+    @content;
+  }
+}
+
+// 亮色主题
+@mixin themeLight() {
+  :root[data-theme="light"]{
+    @content;
+  }
+}
+
+// 暗色主题
+@mixin themeDark() {
+  :root[data-theme="dark"]{
+    @content;
+  }
+}

@@ -1,9 +1,9 @@
-import { h, useEffect, useLayoutEffect, useRef, useState } from "pl-react";
+import { h, useLayoutEffect, useRef, useState } from "pl-react";
 import { api_getMusicList, MusicItem } from "./api/music";
 import env from "~/config/env";
 import style from './index.module.scss';
 import Progress, { ProgressExpose } from "./components/Progress";
-import { calculateByte, randomNum } from "./utils/number";
+import { conversionTime, randomNum } from "./utils/number";
 
 const MUSIC_INDEX = '_music_index_';
 const MUSIC_MODE = '_music_mode_';
@@ -12,10 +12,10 @@ const ModeConfig = {
   loop: '⥧',
   random: '↬',
   single: '⤼'
-} 
+}
 export default function App() {
   const [list, setList] = useState<MusicItem[]>([]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     api_getMusicList().then(res => {
       setList(res);
     })
@@ -46,7 +46,12 @@ export default function App() {
   }
 
   const [status, setStatus] = useState<'stop' | 'play' | 'pause'>('stop');
+  const [proportion, setProportion] = useState({
+    percent: 0,
+    duration: 0,
+  });
   const audioRef = useRef<HTMLAudioElement>(null);
+  const progressRef = useRef<ProgressExpose>();
 
   /**
    * 播放
@@ -91,29 +96,94 @@ export default function App() {
   }
 
   useLayoutEffect(() => {
-    const { name, author } = list[index];
+    const { name, author, path } = list[index];
     document.title = name + ' - ' + author;
+
+    const audioEl = document.createElement('audio');
+    audioEl.preload = 'auto';
+    audioEl.src = env.STATIC_BASE_URL + path;
+    audioRef.current = audioEl;
+
+    // 播放进度
+    function onLoadedmetadata() {
+      setProportion({ percent: 0, duration: audioEl.duration });
+    }
+    function onTimeupdate() {
+      const { currentTime, duration } = audioEl;
+      const percent = currentTime / duration;
+      progressRef.current.setProgress(percent);
+      setProportion({ percent: currentTime, duration });
+    }
+
+    // 预加载进度
+    function onProgress() {
+      const duration = audioEl.duration;
+      const bufferedEnd = audioEl.buffered.end(audioEl.buffered.length - 1);
+      progressRef.current.setLoad(bufferedEnd / duration);
+    }
 
     // 当前歌曲播放结束
     const onEnded = index === list.length - 1 ? pause : next;
-    audioRef.current.addEventListener('ended', onEnded);
+
+    audioEl.addEventListener('loadedmetadata', onLoadedmetadata);
+    audioEl.addEventListener('progress', onProgress);
+    audioEl.addEventListener('timeupdate', onTimeupdate);
+    audioEl.addEventListener('ended', onEnded);
     return () => {
-      audioRef.current.removeEventListener('ended', onEnded);
+      audioEl.removeEventListener('loadedmetadata', onLoadedmetadata);
+      audioEl.removeEventListener('timeupdate', onTimeupdate);
+      audioEl.removeEventListener('progress', onProgress);
+      audioEl.removeEventListener('ended', onEnded);
+      audioEl.pause();
+      audioEl.src = '';
+      audioEl.remove();
+      progressRef.current.setLoad(0);
+      progressRef.current.setProgress(0);
     }
   }, [index]);
 
-  const progressRef = useRef<ProgressExpose>();
-  useLayoutEffect(() => {
-    if (status !== 'play') return;
-    const el = audioRef.current;
-    const timer = setInterval(() => {
-      const num = el.currentTime / el.duration;
-      progressRef.current.setProgress(num);
-    }, 800);
-    return () => {
-      clearInterval(timer);
-    }
-  }, [status])
+  // useLayoutEffect(() => {
+  //   const { path } = list[index];
+  //   const mediaSource = new MediaSource();
+  //   audioRef.current.src = URL.createObjectURL(mediaSource);
+  //   mediaSource.addEventListener('sourceopen', () => {
+  //     const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
+  //     const audioContext = new AudioContext();
+
+  //     fetch(env.STATIC_BASE_URL + path).then(async res => {
+  //       if (!res.ok) return;
+  //       const reader = res.body.getReader();
+  //       const contentLength = Number(res.headers.get('Content-Length'));
+  //       mediaSource.duration = contentLength / 128000;
+  //       let receivedLength = 0;
+  //       const buffer = new Uint8Array(contentLength);
+  //       let count = 0;
+  //       while (1) {
+  //         const { done, value } = await reader.read();
+  //         if (done) {
+  //           if (receivedLength === contentLength) break;
+  //           const sliceBuffer = buffer.slice(count, contentLength);
+  //           sourceBuffer.appendBuffer(sliceBuffer);
+  //           break;
+  //         }
+
+  //         // 下载进度
+  //         receivedLength += value.length;
+  //         const percent = ((receivedLength / contentLength) * 100).toFixed(2);
+
+  //         // 收集数据
+  //         console.log(sourceBuffer.updating);
+  //         buffer.set(value, receivedLength - value.length);
+  //         if (sourceBuffer.updating) continue;
+
+  //         const sliceBuffer = buffer.slice(count, receivedLength);
+  //         sourceBuffer.appendBuffer(sliceBuffer);
+  //         count = receivedLength;
+  //         // console.log(`已加载: ${percent}%`);
+  //       }
+  //     })
+  //   });
+  // }, [index])
 
   /**
    * 进度条回调
@@ -122,22 +192,25 @@ export default function App() {
   function progressChange(num: number) {
     const el = audioRef.current;
     el.currentTime = el.duration * num;
+    if (status !== 'play') {
+      play();
+    }
   }
 
   const currentMusic = list[index];
-  return <div>
-    <ul className={style.list}>{...list.map((item, i) => <li onclick={() => {
-        setIndex(i);
-        setTimeout(play);
-      }}>
-        <strong className={[style.name, 'ellipsis']}>{item.name}</strong>
-        <span className={style.ext}>{item.type}</span>
-        <span className={[style.author, 'ellipsis']}>{item.author}</span>
-      </li>)}
+  return <div className={style.container}>
+    <ul className={style.list}>{...list.map((item, i) => <li className={i === index ? style.active : ''} onclick={() => {
+      setIndex(i);
+      setTimeout(play);
+    }}>
+      <strong className={[style.name, 'ellipsis']}>{item.name}</strong>
+      <span className={style.ext}>{item.type}</span>
+      <span className={[style.author, 'ellipsis']}>{item.author}</span>
+    </li>)}
     </ul>
 
-    <div className={style.container}>
-      <audio ref={audioRef} src={env.STATIC_BASE_URL + currentMusic.path} controls />
+    <div className={style.wrapper}>
+      {/* <audio ref={audioRef} controls preload="auto" /> */}
       <div className={style.header}>
         <div className={style.info}>
           <strong>{currentMusic.name}</strong>
@@ -145,8 +218,8 @@ export default function App() {
           <span className={style.author}>{currentMusic.author}</span>
         </div>
         <div className={style.other}>
-          <span className={style.type}>{currentMusic.type}</span>&nbsp;
-          <span className={style.size}>{calculateByte(currentMusic.size)}</span>
+          <span>{currentMusic.type}</span>
+          <span>{conversionTime(proportion.percent)}/{conversionTime(proportion.duration)}</span>&nbsp;
         </div>
       </div>
       <Progress ref={progressRef} onChange={progressChange} />

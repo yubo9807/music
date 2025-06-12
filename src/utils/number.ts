@@ -22,3 +22,9 @@ export function calculateByte(num = 0, utils = ['B', 'KB', 'MB', 'GB', 'TB', 'PB
 export function randomNum(max: number, min: number = 0) {
   return ~~(Math.random() * (max - min) + min);
 }
+const addZero = (v: number) => v < 10 ? '0' + v : v;
+export function conversionTime(num: number) {
+  const b = Math.floor(num / 60);
+  const c = (Math.floor(num % 60));
+  return `${b}:${addZero(c)}`;
+}

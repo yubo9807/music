@@ -7,6 +7,10 @@ const proxy = {
     target: 'http://trail.hpyyb.cn',
     changeOrigin: true,
   },
+  // '/music': {
+  //   target: 'http://static.hpyyb.cn',
+  //   changeOrigin: true,
+  // }
 }
 const host = process.env.TAURI_DEV_HOST;
 
@@ -20,6 +24,13 @@ export default defineConfig(async () => ({
       '@': resolve(__dirname, './src'),
       '~': resolve(__dirname, './')
     }
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `@use '@/styles/utils.scss';`,
+      },
+    },
   },
   base: env.BASE_URL,
 
