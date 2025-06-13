@@ -1,0 +1,20 @@
+{
+  "name": "music",
+  "start_url": "/",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "/imgs/logo-144.png",
+      "type": "image/png",
+      "sizes": "144x144"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/imgs/logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    }
+  ]
+}
