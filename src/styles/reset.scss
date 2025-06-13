@@ -3,12 +3,12 @@
 :root{
   --both-sides-padding: 20px;
 
-  --main-bg-color: #e6eadd;
+  --main-bg-color: #f1f4f9;
   --main-font-color: #565656;
   --mark-bg-color: #F5F7FA;
   --mark-font-color: #999;
-  --active-bg-color: #d4f0ee;
-  --active-font-color: #0C2972;
+  --active-bg-color: #e5f2f1;
+  --active-font-color: #2f5ac7;
   --line-color: #eee;
 
   --scrollbar-width: 6px;
@@ -19,10 +19,10 @@
   }
 }
 @include utils.themeDark() {
-  --main-bg-color: #344b4e;
-  --main-font-color: #cbafaf;
+  --main-bg-color: #282828;
+  --main-font-color: #b1babd;
   --mark-bg-color: #0e2a35;
-  --active-bg-color: #3c6a3d;
+  --active-bg-color: #3c3c3c;
   --active-font-color: #8cb4ff;
   --line-color: #4f4f4f;
 }

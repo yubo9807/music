@@ -49,6 +49,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  .info{
+    color: var(--active-font-color);
+  }
   .author{
     font-size: 14px;
   }

@@ -104,10 +104,12 @@ export default function App() {
     audioEl.src = env.STATIC_BASE_URL + path;
     audioRef.current = audioEl;
 
-    // 播放进度
+    // 获取音频时长，手机端无法触发
     function onLoadedmetadata() {
       setProportion({ percent: 0, duration: audioEl.duration });
     }
+
+    // 播放进度
     function onTimeupdate() {
       const { currentTime, duration } = audioEl;
       const percent = currentTime / duration;
@@ -117,13 +119,13 @@ export default function App() {
 
     // 预加载进度
     function onProgress() {
-      const duration = audioEl.duration;
-      const bufferedEnd = audioEl.buffered.end(audioEl.buffered.length - 1);
+      const { duration, buffered } = audioEl;
+      const bufferedEnd = buffered.end(0);
       progressRef.current.setLoad(bufferedEnd / duration);
     }
 
     // 当前歌曲播放结束
-    const onEnded = index === list.length - 1 ? pause : next;
+    const onEnded = (index === list.length - 1 && mode === 'loop') ? pause : next;
 
     audioEl.addEventListener('loadedmetadata', onLoadedmetadata);
     audioEl.addEventListener('progress', onProgress);
@@ -135,7 +137,7 @@ export default function App() {
       audioEl.removeEventListener('progress', onProgress);
       audioEl.removeEventListener('ended', onEnded);
       audioEl.pause();
-      audioEl.src = '';
+      audioEl.src = '';  // 停止音频流的请求
       audioEl.remove();
       progressRef.current.setLoad(0);
       progressRef.current.setProgress(0);
